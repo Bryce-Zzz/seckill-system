@@ -1,0 +1,60 @@
+# C++ 秒杀系统配置文件
+server:
+  host: "0.0.0.0"
+  port: 9000
+  worker_threads: 0  # 0 = 自动检测 CPU 核心数
+  max_connections: 100000
+
+redis:
+  host: "localhost"
+  port: 6379
+  password: ""
+  db: 0
+  pool_size: 1000   # 🌟 扩容：32核服务器需要更多连接通道
+
+mysql:
+  host: "127.0.0.1"
+  port: 3306
+  user: "seckill"
+  password: "seckill123"
+  database: "seckill"
+  pool_size: 16
+
+seckill:
+  stock_prefix: "seckill:stock:"
+  order_set_prefix: "seckill:orders:"
+  order_stream_key: "seckill:stream:orders"
+  max_per_user: 1
+  request_cooldown_seconds: 5    # 每次请求后的防刷冷却（秒），0 表示不限制
+  stream_maxlen: 1000000          # Redis Stream 最大保留条数（防内存炸弹）
+
+rate_limit:
+  enable: true
+  token_bucket:
+    rate: 1000000      # 每秒生成令牌数
+    capacity: 1500000  # 桶容量
+  sliding_window:
+    window_size: 1000  # 窗口大小(ms)
+    max_requests: 2000000
+  user_window:           # Phase 1: 用户维度细粒度限流
+    window_size: 10      # 窗口大小(秒)：单用户在 N 秒内
+    max_requests: 5     # 最多 N 次请求，防同一账号并发刷单
+
+log:
+  level: "info"
+  file: "logs/seckill.log"
+  format: "text"     # "text" | "json"
+  max_size: 100
+  async: true
+
+# 订单超时配置
+timeout:
+  order_timeout_seconds: 300    # 订单超时时长（5分钟）
+  check_interval_seconds: 30    # 检查周期（30秒）
+
+# 安全配置（动态 Token 防脚本直刷）
+security:
+  token_required: true          # 是否启用 Token 验证（生产环境建议 true）
+  token_salt: "change_this_salt_in_production_abc123"  # Token 加密盐（生产环境必须修改！）
+  token_expire_seconds: 30       # Token 有效期（秒）
+  test_bypass_secret: ""         # 测试模式旁路密钥（可选）

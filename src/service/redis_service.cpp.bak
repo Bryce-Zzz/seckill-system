@@ -1,0 +1,303 @@
+#include "service/redis_service.h"
+#include "common/logger.h"
+#include <cstring>
+#include <sstream>
+
+bool RedisService::init(const std::string& host, int port, const std::string& password, int db, int pool_size) {
+    redisContext* ctx = redisConnect(host.c_str(), port);
+    if (!ctx || ctx->err) {
+        if (ctx) {
+            std::string err_msg = "Redis connection error: " + std::string(ctx->errstr);
+            Logger::instance().error(err_msg);
+            redisFree(ctx);
+        } else {
+            Logger::instance().error("Redis connection failed: can't allocate redis context");
+        }
+        return false;
+    }
+
+    if (!password.empty()) {
+        auto* reply = (redisReply*)redisCommand(ctx, "AUTH %s", password.c_str());
+        if (reply && reply->type == REDIS_REPLY_ERROR) {
+            std::string err_msg = "Redis auth error: " + std::string(reply->str ? reply->str : "unknown");
+            Logger::instance().error(err_msg);
+            freeReplyObject(reply);
+            redisFree(ctx);
+            return false;
+        }
+        if (reply) freeReplyObject(reply);
+    }
+
+    if (db > 0) {
+        auto* reply = (redisReply*)redisCommand(ctx, "SELECT %d", db);
+        if (reply && reply->type == REDIS_REPLY_ERROR) {
+            std::string err_msg = "Redis select db error: " + std::string(reply->str ? reply->str : "unknown");
+            Logger::instance().error(err_msg);
+            freeReplyObject(reply);
+            redisFree(ctx);
+            return false;
+        }
+        if (reply) freeReplyObject(reply);
+    }
+
+    context_ = ctx;
+    Logger::instance().info("Redis connected successfully");
+    return true;
+}
+
+std::string RedisService::get(const std::string& key) {
+    if (!context_) return "";
+    std::lock_guard<std::mutex> lock(redis_mutex_);
+    auto* reply = (redisReply*)redisCommand(context_, "GET %s", key.c_str());
+    if (!reply) return "";
+    
+    std::string result;
+    if (reply->type == REDIS_REPLY_STRING) {
+        result = std::string(reply->str, reply->len);
+    }
+    freeReplyObject(reply);
+    return result;
+}
+
+bool RedisService::set(const std::string& key, const std::string& value) {
+    if (!context_) return false;
+    std::lock_guard<std::mutex> lock(redis_mutex_);
+    auto* reply = (redisReply*)redisCommand(context_, "SET %s %s", key.c_str(), value.c_str());
+    if (!reply) return false;
+    
+    bool ok = reply->type != REDIS_REPLY_ERROR;
+    freeReplyObject(reply);
+    return ok;
+}
+
+bool RedisService::setex(const std::string& key, int expire_seconds, const std::string& value) {
+    if (!context_) return false;
+    std::lock_guard<std::mutex> lock(redis_mutex_);
+    auto* reply = (redisReply*)redisCommand(context_, "SETEX %s %d %s", key.c_str(), expire_seconds, value.c_str());
+    if (!reply) return false;
+    
+    bool ok = reply->type != REDIS_REPLY_ERROR;
+    freeReplyObject(reply);
+    return ok;
+}
+
+long long RedisService::incr(const std::string& key) {
+    if (!context_) return 0;
+    std::lock_guard<std::mutex> lock(redis_mutex_);
+    auto* reply = (redisReply*)redisCommand(context_, "INCR %s", key.c_str());
+    if (!reply) return 0;
+    
+    long long result = reply->type == REDIS_REPLY_INTEGER ? reply->integer : 0;
+    freeReplyObject(reply);
+    return result;
+}
+
+long long RedisService::incrby(const std::string& key, int amount) {
+    if (!context_) return 0;
+    std::lock_guard<std::mutex> lock(redis_mutex_);
+    auto* reply = (redisReply*)redisCommand(context_, "INCRBY %s %d", key.c_str(), amount);
+    if (!reply) return 0;
+    
+    long long result = reply->type == REDIS_REPLY_INTEGER ? reply->integer : 0;
+    freeReplyObject(reply);
+    return result;
+}
+
+long long RedisService::decr(const std::string& key) {
+    if (!context_) return 0;
+    std::lock_guard<std::mutex> lock(redis_mutex_);
+    auto* reply = (redisReply*)redisCommand(context_, "DECR %s", key.c_str());
+    if (!reply) return 0;
+    
+    long long result = reply->type == REDIS_REPLY_INTEGER ? reply->integer : 0;
+    freeReplyObject(reply);
+    return result;
+}
+
+bool RedisService::del(const std::string& key) {
+    if (!context_) return false;
+    std::lock_guard<std::mutex> lock(redis_mutex_);
+    auto* reply = (redisReply*)redisCommand(context_, "DEL %s", key.c_str());
+    if (!reply) return false;
+    
+    bool ok = reply->type == REDIS_REPLY_INTEGER && reply->integer > 0;
+    freeReplyObject(reply);
+    return ok;
+}
+
+bool RedisService::exists(const std::string& key) {
+    if (!context_) return false;
+    std::lock_guard<std::mutex> lock(redis_mutex_);
+    auto* reply = (redisReply*)redisCommand(context_, "EXISTS %s", key.c_str());
+    if (!reply) return false;
+    
+    bool ok = reply->type == REDIS_REPLY_INTEGER && reply->integer > 0;
+    freeReplyObject(reply);
+    return ok;
+}
+
+bool RedisService::sismember(const std::string& key, const std::string& member) {
+    if (!context_) return false;
+    std::lock_guard<std::mutex> lock(redis_mutex_);
+    auto* reply = (redisReply*)redisCommand(context_, "SISMEMBER %s %s", key.c_str(), member.c_str());
+    if (!reply) return false;
+    
+    bool result = reply->type == REDIS_REPLY_INTEGER && reply->integer == 1;
+    freeReplyObject(reply);
+    return result;
+}
+
+bool RedisService::sadd(const std::string& key, const std::string& member) {
+    if (!context_) return false;
+    std::lock_guard<std::mutex> lock(redis_mutex_);
+    auto* reply = (redisReply*)redisCommand(context_, "SADD %s %s", key.c_str(), member.c_str());
+    if (!reply) return false;
+    
+    bool ok = reply->type == REDIS_REPLY_INTEGER;
+    freeReplyObject(reply);
+    return ok;
+}
+
+bool RedisService::srem(const std::string& key, const std::string& member) {
+    if (!context_) return false;
+    std::lock_guard<std::mutex> lock(redis_mutex_);
+    auto* reply = (redisReply*)redisCommand(context_, "SREM %s %s", key.c_str(), member.c_str());
+    if (!reply) return false;
+    
+    bool ok = reply->type == REDIS_REPLY_INTEGER;
+    freeReplyObject(reply);
+    return ok;
+}
+
+long long RedisService::eval(const std::string& script, const std::vector<std::string>& keys,
+                              const std::vector<std::string>& args) {
+    if (!context_) return 0;
+    std::lock_guard<std::mutex> lock(redis_mutex_);
+    
+    std::vector<const char*> argv;
+    std::vector<size_t> argvlen;
+    
+    argv.push_back("EVAL");
+    argvlen.push_back(4);
+    
+    argv.push_back(script.c_str());
+    argvlen.push_back(script.size());
+    
+    char numkeys[16];
+    snprintf(numkeys, sizeof(numkeys), "%zu", keys.size());
+    argv.push_back(numkeys);
+    argvlen.push_back(strlen(numkeys));
+    
+    for (const auto& k : keys) {
+        argv.push_back(k.c_str());
+        argvlen.push_back(k.size());
+    }
+    
+    for (const auto& a : args) {
+        argv.push_back(a.c_str());
+        argvlen.push_back(a.size());
+    }
+    
+    auto* reply = (redisReply*)redisCommandArgv(context_, argv.size(), argv.data(), argvlen.data());
+    if (!reply) return 0;
+    
+    long long result = 0;
+    if (reply->type == REDIS_REPLY_INTEGER) {
+        result = reply->integer;
+    }
+    freeReplyObject(reply);
+    return result;
+}
+
+std::string RedisService::eval_string(const std::string& script, const std::vector<std::string>& keys,
+                                        const std::vector<std::string>& args) {
+    if (!context_) return "";
+    std::lock_guard<std::mutex> lock(redis_mutex_);
+    
+    std::vector<const char*> argv;
+    std::vector<size_t> argvlen;
+    
+    argv.push_back("EVAL");
+    argvlen.push_back(4);
+    
+    argv.push_back(script.c_str());
+    argvlen.push_back(script.size());
+    
+    char numkeys[16];
+    snprintf(numkeys, sizeof(numkeys), "%zu", keys.size());
+    argv.push_back(numkeys);
+    argvlen.push_back(strlen(numkeys));
+    
+    for (const auto& k : keys) {
+        argv.push_back(k.c_str());
+        argvlen.push_back(k.size());
+    }
+    
+    for (const auto& a : args) {
+        argv.push_back(a.c_str());
+        argvlen.push_back(a.size());
+    }
+    
+    auto* reply = (redisReply*)redisCommandArgv(context_, argv.size(), argv.data(), argvlen.data());
+    if (!reply) return "";
+    
+    std::string result;
+    if (reply->type == REDIS_REPLY_STRING) {
+        result = std::string(reply->str, reply->len);
+    }
+    freeReplyObject(reply);
+    return result;
+}
+
+bool RedisService::xadd(const std::string& key, const std::string& field, const std::string& value) {
+    if (!context_) return false;
+    std::lock_guard<std::mutex> lock(redis_mutex_);
+    
+    auto* reply = (redisReply*)redisCommand(context_, 
+        "XADD %s * %s %s", key.c_str(), field.c_str(), value.c_str());
+    if (!reply) return false;
+    
+    bool ok = reply->type == REDIS_REPLY_STRING;
+    freeReplyObject(reply);
+    return ok;
+}
+
+std::vector<std::string> RedisService::xrange(const std::string& key, const std::string& start, 
+                                               const std::string& end, int count) {
+    std::vector<std::string> results;
+    if (!context_) return results;
+    std::lock_guard<std::mutex> lock(redis_mutex_);
+    
+    auto* reply = (redisReply*)redisCommand(context_,
+        "XRANGE %s %s %s COUNT %d", key.c_str(), start.c_str(), end.c_str(), count);
+    if (!reply) return results;
+    
+    if (reply->type == REDIS_REPLY_ARRAY) {
+        for (size_t i = 0; i < reply->elements; ++i) {
+            auto* item = reply->element[i];
+            if (item->type == REDIS_REPLY_ARRAY && item->elements >= 2) {
+                results.push_back(std::string(item->element[1]->str, item->element[1]->len));
+            }
+        }
+    }
+    freeReplyObject(reply);
+    return results;
+}
+
+bool RedisService::xdel(const std::string& key, const std::string& id) {
+    if (!context_) return false;
+    std::lock_guard<std::mutex> lock(redis_mutex_);
+    auto* reply = (redisReply*)redisCommand(context_, "XDEL %s %s", key.c_str(), id.c_str());
+    if (!reply) return false;
+    
+    bool ok = reply->type == REDIS_REPLY_INTEGER && reply->integer > 0;
+    freeReplyObject(reply);
+    return ok;
+}
+
+void RedisService::close() {
+    if (context_) {
+        redisFree(context_);
+        context_ = nullptr;
+    }
+}

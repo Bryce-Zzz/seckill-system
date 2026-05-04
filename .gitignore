@@ -1,0 +1,23 @@
+# 编译输出
+build/
+bin/
+*.o
+*.obj
+*.so
+*.a
+seckill-server
+
+# 编辑器与系统配置
+.vscode/
+.idea/
+*.suo
+*.user
+.DS_Store
+
+# 日志与压测产生的文件
+logs/
+*.log
+redis_orders.txt
+
+# 前端 node_modules (如果你有的话)
+node_modules/

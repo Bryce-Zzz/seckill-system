@@ -1,0 +1,98 @@
+[
+{
+  "directory": "/home/dongbai/seckill-system/build_release",
+  "command": "/usr/bin/c++  -I/home/dongbai/seckill-system/include  -Wall -Wextra -O2 -pthread -O3 -DNDEBUG -std=gnu++20 -o CMakeFiles/seckill-server.dir/src/main.cpp.o -c /home/dongbai/seckill-system/src/main.cpp",
+  "file": "/home/dongbai/seckill-system/src/main.cpp",
+  "output": "CMakeFiles/seckill-server.dir/src/main.cpp.o"
+},
+{
+  "directory": "/home/dongbai/seckill-system/build_release",
+  "command": "/usr/bin/c++  -I/home/dongbai/seckill-system/include  -Wall -Wextra -O2 -pthread -O3 -DNDEBUG -std=gnu++20 -o CMakeFiles/seckill-server.dir/src/common/config.cpp.o -c /home/dongbai/seckill-system/src/common/config.cpp",
+  "file": "/home/dongbai/seckill-system/src/common/config.cpp",
+  "output": "CMakeFiles/seckill-server.dir/src/common/config.cpp.o"
+},
+{
+  "directory": "/home/dongbai/seckill-system/build_release",
+  "command": "/usr/bin/c++  -I/home/dongbai/seckill-system/include  -Wall -Wextra -O2 -pthread -O3 -DNDEBUG -std=gnu++20 -o CMakeFiles/seckill-server.dir/src/common/logger.cpp.o -c /home/dongbai/seckill-system/src/common/logger.cpp",
+  "file": "/home/dongbai/seckill-system/src/common/logger.cpp",
+  "output": "CMakeFiles/seckill-server.dir/src/common/logger.cpp.o"
+},
+{
+  "directory": "/home/dongbai/seckill-system/build_release",
+  "command": "/usr/bin/c++  -I/home/dongbai/seckill-system/include  -Wall -Wextra -O2 -pthread -O3 -DNDEBUG -std=gnu++20 -o CMakeFiles/seckill-server.dir/src/common/metrics.cpp.o -c /home/dongbai/seckill-system/src/common/metrics.cpp",
+  "file": "/home/dongbai/seckill-system/src/common/metrics.cpp",
+  "output": "CMakeFiles/seckill-server.dir/src/common/metrics.cpp.o"
+},
+{
+  "directory": "/home/dongbai/seckill-system/build_release",
+  "command": "/usr/bin/c++  -I/home/dongbai/seckill-system/include  -Wall -Wextra -O2 -pthread -O3 -DNDEBUG -std=gnu++20 -o CMakeFiles/seckill-server.dir/src/server/http_server.cpp.o -c /home/dongbai/seckill-system/src/server/http_server.cpp",
+  "file": "/home/dongbai/seckill-system/src/server/http_server.cpp",
+  "output": "CMakeFiles/seckill-server.dir/src/server/http_server.cpp.o"
+},
+{
+  "directory": "/home/dongbai/seckill-system/build_release",
+  "command": "/usr/bin/c++  -I/home/dongbai/seckill-system/include  -Wall -Wextra -O2 -pthread -O3 -DNDEBUG -std=gnu++20 -o CMakeFiles/seckill-server.dir/src/service/redis_service.cpp.o -c /home/dongbai/seckill-system/src/service/redis_service.cpp",
+  "file": "/home/dongbai/seckill-system/src/service/redis_service.cpp",
+  "output": "CMakeFiles/seckill-server.dir/src/service/redis_service.cpp.o"
+},
+{
+  "directory": "/home/dongbai/seckill-system/build_release",
+  "command": "/usr/bin/c++  -I/home/dongbai/seckill-system/include  -Wall -Wextra -O2 -pthread -O3 -DNDEBUG -std=gnu++20 -o CMakeFiles/seckill-server.dir/src/service/rate_limiter.cpp.o -c /home/dongbai/seckill-system/src/service/rate_limiter.cpp",
+  "file": "/home/dongbai/seckill-system/src/service/rate_limiter.cpp",
+  "output": "CMakeFiles/seckill-server.dir/src/service/rate_limiter.cpp.o"
+},
+{
+  "directory": "/home/dongbai/seckill-system/build_release",
+  "command": "/usr/bin/c++  -I/home/dongbai/seckill-system/include  -Wall -Wextra -O2 -pthread -O3 -DNDEBUG -std=gnu++20 -o CMakeFiles/seckill-server.dir/src/service/mysql_service.cpp.o -c /home/dongbai/seckill-system/src/service/mysql_service.cpp",
+  "file": "/home/dongbai/seckill-system/src/service/mysql_service.cpp",
+  "output": "CMakeFiles/seckill-server.dir/src/service/mysql_service.cpp.o"
+},
+{
+  "directory": "/home/dongbai/seckill-system/build_release",
+  "command": "/usr/bin/c++  -I/home/dongbai/seckill-system/include  -Wall -Wextra -O2 -pthread -O3 -DNDEBUG -std=gnu++20 -o CMakeFiles/seckill-server.dir/src/service/order_processor.cpp.o -c /home/dongbai/seckill-system/src/service/order_processor.cpp",
+  "file": "/home/dongbai/seckill-system/src/service/order_processor.cpp",
+  "output": "CMakeFiles/seckill-server.dir/src/service/order_processor.cpp.o"
+},
+{
+  "directory": "/home/dongbai/seckill-system/build_release",
+  "command": "/usr/bin/c++  -I/home/dongbai/seckill-system/include  -Wall -Wextra -O2 -pthread -O3 -DNDEBUG -std=gnu++20 -o CMakeFiles/seckill-server.dir/src/service/timeout_checker.cpp.o -c /home/dongbai/seckill-system/src/service/timeout_checker.cpp",
+  "file": "/home/dongbai/seckill-system/src/service/timeout_checker.cpp",
+  "output": "CMakeFiles/seckill-server.dir/src/service/timeout_checker.cpp.o"
+},
+{
+  "directory": "/home/dongbai/seckill-system/build_release",
+  "command": "/usr/bin/c++  -I/home/dongbai/seckill-system/include  -Wall -Wextra -O2 -pthread -O3 -DNDEBUG -std=gnu++20 -o CMakeFiles/seckill-server.dir/src/handler/seckill_handler.cpp.o -c /home/dongbai/seckill-system/src/handler/seckill_handler.cpp",
+  "file": "/home/dongbai/seckill-system/src/handler/seckill_handler.cpp",
+  "output": "CMakeFiles/seckill-server.dir/src/handler/seckill_handler.cpp.o"
+},
+{
+  "directory": "/home/dongbai/seckill-system/build_release",
+  "command": "/usr/bin/c++  -I/home/dongbai/seckill-system/include  -Wall -Wextra -O2 -pthread -O3 -DNDEBUG -std=gnu++20 -o CMakeFiles/seckill-server.dir/src/handler/order_handler.cpp.o -c /home/dongbai/seckill-system/src/handler/order_handler.cpp",
+  "file": "/home/dongbai/seckill-system/src/handler/order_handler.cpp",
+  "output": "CMakeFiles/seckill-server.dir/src/handler/order_handler.cpp.o"
+},
+{
+  "directory": "/home/dongbai/seckill-system/build_release",
+  "command": "/usr/bin/c++  -I/home/dongbai/seckill-system/include  -Wall -Wextra -O2 -pthread -O3 -DNDEBUG -std=gnu++20 -o CMakeFiles/seckill-server.dir/src/handler/admin_handler.cpp.o -c /home/dongbai/seckill-system/src/handler/admin_handler.cpp",
+  "file": "/home/dongbai/seckill-system/src/handler/admin_handler.cpp",
+  "output": "CMakeFiles/seckill-server.dir/src/handler/admin_handler.cpp.o"
+},
+{
+  "directory": "/home/dongbai/seckill-system/build_release",
+  "command": "/usr/bin/c++  -I/home/dongbai/seckill-system/include  -Wall -Wextra -O2 -pthread -O3 -DNDEBUG -std=gnu++20 -o CMakeFiles/seckill-server.dir/src/handler/health_handler.cpp.o -c /home/dongbai/seckill-system/src/handler/health_handler.cpp",
+  "file": "/home/dongbai/seckill-system/src/handler/health_handler.cpp",
+  "output": "CMakeFiles/seckill-server.dir/src/handler/health_handler.cpp.o"
+},
+{
+  "directory": "/home/dongbai/seckill-system/build_release",
+  "command": "/usr/bin/c++  -I/home/dongbai/seckill-system/include  -Wall -Wextra -O2 -pthread -O3 -DNDEBUG -std=gnu++20 -o CMakeFiles/seckill-server.dir/src/handler/metrics_handler.cpp.o -c /home/dongbai/seckill-system/src/handler/metrics_handler.cpp",
+  "file": "/home/dongbai/seckill-system/src/handler/metrics_handler.cpp",
+  "output": "CMakeFiles/seckill-server.dir/src/handler/metrics_handler.cpp.o"
+},
+{
+  "directory": "/home/dongbai/seckill-system/build_release",
+  "command": "/usr/bin/c++  -I/home/dongbai/seckill-system/include  -Wall -Wextra -O2 -pthread -O3 -DNDEBUG -std=gnu++20 -o CMakeFiles/seckill-server.dir/src/handler/sse_handler.cpp.o -c /home/dongbai/seckill-system/src/handler/sse_handler.cpp",
+  "file": "/home/dongbai/seckill-system/src/handler/sse_handler.cpp",
+  "output": "CMakeFiles/seckill-server.dir/src/handler/sse_handler.cpp.o"
+}
+]

@@ -1,0 +1,1640 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>闪电秒杀</title>
+    <style>
+        /* ===== Design Tokens ===== */
+        :root {
+            --primary: #10B981;
+            --primary-dark: #059669;
+            --primary-light: #D1FAE5;
+            --primary-glow: rgba(16, 185, 129, 0.15);
+            --bg: #F8FAFC;
+            --surface: #FFFFFF;
+            --border: #E2E8F0;
+            --text-1: #0F172A;
+            --text-2: #475569;
+            --text-3: #94A3B8;
+            --danger: #EF4444;
+            --danger-light: #FEE2E2;
+            --warning: #F59E0B;
+            --warning-light: #FEF3C7;
+            --radius: 14px;
+            --radius-sm: 8px;
+            --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+            --shadow-lg: 0 10px 30px rgba(0,0,0,0.1);
+            --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            --sidebar-w: 240px;
+            --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font);
+            background: var(--bg);
+            color: var(--text-1);
+            min-height: 100vh;
+            display: flex;
+        }
+
+        /* ===== Sidebar ===== */
+        .sidebar {
+            width: var(--sidebar-w);
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            top: 0; left: 0; bottom: 0;
+            z-index: 100;
+            transition: transform var(--transition);
+        }
+
+        .sidebar-logo {
+            padding: 28px 24px 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .logo-mark {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(16,185,129,0.3);
+        }
+
+        .logo-icon svg { width: 20px; height: 20px; fill: white; }
+
+        .logo-text {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-1);
+            letter-spacing: -0.3px;
+        }
+
+        .logo-sub {
+            font-size: 11px;
+            color: var(--text-3);
+            font-weight: 400;
+            margin-top: 1px;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            padding: 16px 12px;
+            overflow-y: auto;
+        }
+
+        .nav-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-3);
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            padding: 0 12px;
+            margin: 12px 0 6px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: var(--radius-sm);
+            color: var(--text-2);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--transition);
+            margin-bottom: 2px;
+            text-decoration: none;
+        }
+
+        .nav-item:hover {
+            background: var(--bg);
+            color: var(--text-1);
+        }
+
+        .nav-item.active {
+            background: var(--primary-glow);
+            color: var(--primary);
+        }
+
+        .nav-item.active svg { stroke: var(--primary); }
+
+        .nav-item svg {
+            width: 18px; height: 18px;
+            stroke: var(--text-3);
+            stroke-width: 2;
+            fill: none;
+            flex-shrink: 0;
+            transition: stroke var(--transition);
+        }
+
+        .nav-badge {
+            margin-left: auto;
+            background: var(--primary);
+            color: white;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 2px 7px;
+            border-radius: 20px;
+        }
+
+        .sidebar-user {
+            padding: 16px;
+            border-top: 1px solid var(--border);
+        }
+
+        .user-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: var(--bg);
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: all var(--transition);
+        }
+
+        .user-card:hover { background: var(--border); }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--primary), #3B82F6);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 600;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .user-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-1);
+        }
+
+        .user-role {
+            font-size: 11px;
+            color: var(--text-3);
+        }
+
+        /* ===== Main Content ===== */
+        .main {
+            margin-left: var(--sidebar-w);
+            flex: 1;
+            min-height: 100vh;
+        }
+
+        /* Topbar */
+        .topbar {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 0 32px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .topbar-left { display: flex; align-items: center; gap: 16px; }
+
+        .topbar-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-1);
+        }
+
+        .topbar-breadcrumb {
+            font-size: 13px;
+            color: var(--text-3);
+        }
+
+        .topbar-breadcrumb span { color: var(--primary); }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .topbar-btn {
+            width: 36px; height: 36px;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--text-2);
+            transition: all var(--transition);
+        }
+
+        .topbar-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: var(--primary-glow);
+        }
+
+        .topbar-btn svg { width: 18px; height: 18px; stroke-width: 2; }
+
+        .page-content {
+            padding: 32px;
+        }
+
+        /* ===== Two-Column Layout ===== */
+        .content-layout {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            gap: 28px;
+            align-items: start;
+        }
+
+
+
+        /* ===== Live Feed Sidebar ===== */
+        .live-sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .live-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+
+        .live-card-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .live-card-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-1);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .live-card-title .pulse-dot {
+            width: 8px; height: 8px;
+            background: var(--danger);
+            border-radius: 50%;
+            animation: livePulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes livePulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.8); }
+        }
+
+        .live-card-body {
+            padding: 0;
+            max-height: 280px;
+            overflow-y: auto;
+        }
+
+        .live-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 20px;
+            border-bottom: 1px solid var(--border);
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .live-item:last-child { border-bottom: none; }
+
+        .live-avatar {
+            width: 32px; height: 32px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 700;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .live-info { flex: 1; min-width: 0; }
+        .live-info .user { font-size: 12px; font-weight: 600; color: var(--text-1); }
+        .live-info .action { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+        .live-time { font-size: 10px; color: var(--text-3); flex-shrink: 0; }
+
+        .live-empty {
+            padding: 40px 20px;
+            text-align: center;
+            color: var(--text-3);
+        }
+
+        .live-empty svg {
+            width: 36px; height: 36px;
+            stroke: #CBD5E1;
+            stroke-width: 1.5;
+            fill: none;
+            margin-bottom: 12px;
+        }
+
+        .live-empty .title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-2);
+            margin-bottom: 4px;
+        }
+
+        .live-empty .hint {
+            font-size: 12px;
+            color: var(--text-3);
+            line-height: 1.5;
+        }
+
+        /* ===== Rank List ===== */
+        .rank-list { padding: 8px 0; }
+        .rank-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 20px;
+        }
+        .rank-item:hover { background: var(--bg); }
+        .rank-num {
+            width: 20px; height: 20px;
+            border-radius: 6px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 10px; font-weight: 700;
+            flex-shrink: 0;
+        }
+        .rank-num.top1 { background: linear-gradient(135deg, #FFD700, #FFA500); color: white; }
+        .rank-num.top2 { background: linear-gradient(135deg, #C0C0C0, #A8A8A8); color: white; }
+        .rank-num.top3 { background: linear-gradient(135deg, #CD7F32, #B87333); color: white; }
+        .rank-num.normal { background: var(--bg); color: var(--text-3); }
+
+        .rank-info { flex: 1; min-width: 0; }
+        .rank-info .name { font-size: 12px; font-weight: 600; color: var(--text-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .rank-info .meta { font-size: 10px; color: var(--text-3); margin-top: 2px; }
+        .rank-stock { font-size: 12px; font-weight: 700; color: var(--primary); flex-shrink: 0; }
+
+        .rank-bar-wrap {
+            width: 60px; height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        .rank-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), #34D399);
+            border-radius: 2px;
+        }
+
+        /* ===== Product Grid ===== */
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 20px;
+        }
+
+        .stat-mini {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 14px 18px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex: 1;
+            min-width: 0;
+            transition: all var(--transition);
+        }
+
+        .stat-mini:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-1px);
+        }
+
+        .stat-icon {
+            width: 36px; height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .stat-icon.green { background: var(--primary-light); }
+        .stat-icon.green svg { stroke: var(--primary); }
+        .stat-icon.blue { background: #DBEAFE; }
+        .stat-icon.blue svg { stroke: #3B82F6; }
+        .stat-icon.orange { background: var(--warning-light); }
+        .stat-icon.orange svg { stroke: var(--warning); }
+
+        .stat-icon svg { width: 22px; height: 22px; stroke-width: 2; fill: none; }
+
+        .stat-info h4 {
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text-3);
+            margin-bottom: 2px;
+        }
+
+        .stat-info p {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-1);
+            line-height: 1;
+        }
+
+        .stat-info small {
+            font-size: 11px;
+            color: var(--text-3);
+            font-weight: 400;
+        }
+
+        .stat-icon svg { width: 18px; height: 18px; stroke-width: 2; fill: none; }
+
+        .stats-bar {
+            display: flex;
+            gap: 12px;
+        }
+
+        /* ===== Section Header ===== */
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-1);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 18px;
+            background: var(--primary);
+            border-radius: 2px;
+        }
+
+        .section-subtitle {
+            font-size: 13px;
+            color: var(--text-3);
+            margin-top: 4px;
+        }
+
+        /* ===== Product Grid ===== */
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .product-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            transition: all var(--transition);
+            box-shadow: var(--shadow);
+        }
+
+        .product-card:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+            border-color: var(--primary);
+        }
+
+        .product-card.inactive {
+            opacity: 0.6;
+            border-color: #E2E8F0;
+            background: #FAFBFC;
+        }
+        .product-card.inactive .product-visual { opacity: 0.5; }
+
+        .product-visual {
+            height: 160px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .product-visual-bg {
+            position: absolute;
+            inset: 0;
+            opacity: 0.08;
+        }
+
+        .product-visual-icon {
+            font-size: 56px;
+            position: relative;
+            z-index: 1;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
+        }
+
+        .product-tag {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            background: var(--primary);
+            color: white;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .product-tag svg { width: 12px; height: 12px; stroke: white; stroke-width: 2; fill: none; }
+
+        .product-body { padding: 20px; }
+
+        .product-name {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-1);
+            margin-bottom: 8px;
+        }
+
+        .product-price-row {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .product-price {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .product-price-original {
+            font-size: 12px;
+            color: var(--text-3);
+            text-decoration: line-through;
+            text-decoration-color: #CBD5E1;
+            opacity: 0.45;
+        }
+
+        .product-meta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .product-stock {
+            font-size: 12px;
+            color: var(--text-2);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .product-stock strong { color: var(--text-1); }
+
+        .stock-bar-wrap {
+            width: 80px;
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .stock-bar {
+            height: 100%;
+            background: var(--primary);
+            border-radius: 2px;
+            transition: width 0.5s ease;
+        }
+
+        .stock-bar.danger { background: var(--danger); }
+
+        .product-timer {
+            font-size: 12px;
+            color: var(--text-3);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .product-timer svg { width: 12px; height: 12px; stroke: var(--text-3); stroke-width: 2; fill: none; }
+
+        /* ===== Buttons ===== */
+        .btn-seckill {
+            width: 100%;
+            padding: 0 12px;
+            height: 44px;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition);
+            /* Flexbox 现代居中布局 */
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            gap: 6px;
+            /* 清除行高干扰，确保文字绝对居中 */
+            line-height: 1;
+            white-space: nowrap;
+            /* SVG 图标不干扰居中 */
+            box-sizing: border-box;
+        }
+
+        .btn-seckill svg {
+            width: 16px;
+            height: 16px;
+            stroke-width: 2;
+            fill: none;
+            flex-shrink: 0;
+        }
+
+        .btn-seckill span {
+            margin: 0;
+            padding: 0;
+        }
+
+        .btn-seckill.active {
+            background: linear-gradient(135deg, #FF6B35, #F72C25);
+            color: white;
+            box-shadow: 0 4px 14px rgba(255,107,53,0.4), 0 0 0 0 rgba(255,107,53,0.4);
+            animation: seckillPulse 1.8s ease-in-out infinite, seckillGradient 3s ease infinite;
+        }
+
+        @keyframes seckillPulse {
+            0%   { box-shadow: 0 4px 14px rgba(255,107,53,0.4), 0 0 0 0 rgba(255,107,53,0.5); }
+            50%  { box-shadow: 0 4px 14px rgba(255,107,53,0.4), 0 0 0 10px rgba(255,107,53,0); }
+            100% { box-shadow: 0 4px 14px rgba(255,107,53,0.4), 0 0 0 0 rgba(255,107,53,0.5); }
+        }
+
+        @keyframes seckillGradient {
+            0%   { background: linear-gradient(135deg, #FF6B35, #F72C25); }
+            50%  { background: linear-gradient(135deg, #F72C25, #FF6B35); }
+            100% { background: linear-gradient(135deg, #FF6B35, #F72C25); }
+        }
+
+        .btn-seckill.active:hover {
+            transform: translateY(-2px) scale(1.01);
+            box-shadow: 0 8px 20px rgba(255,107,53,0.5), 0 0 0 0 rgba(255,107,53,0.3);
+            animation: none;
+            background: linear-gradient(135deg, #FF6B35, #F72C25);
+        }
+
+.btn-seckill.active:active { transform: translateY(0) scale(0.98); }
+
+        .btn-seckill.disabled {
+            background: var(--bg);
+            color: var(--text-3);
+            cursor: not-allowed;
+            border: 1px solid var(--border);
+        }
+
+        .btn-seckill.soldout {
+            background: var(--danger-light);
+            color: var(--danger);
+            cursor: not-allowed;
+        }
+
+        .btn-seckill.pending {
+            background: var(--warning-light);
+            color: var(--warning);
+            cursor: pointer;
+        }
+
+        .btn-seckill.pending:hover { filter: brightness(0.96); }
+
+        /* ===== Modal ===== */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .modal-overlay.show { display: flex; }
+
+        .modal {
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 40px;
+            width: 100%;
+            max-width: 420px;
+            position: relative;
+            animation: modalIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: var(--shadow-lg);
+        }
+
+        @keyframes modalIn {
+            from { transform: scale(0.9) translateY(10px); opacity: 0; }
+            to { transform: scale(1) translateY(0); opacity: 1; }
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 16px; right: 16px;
+            width: 32px; height: 32px;
+            border: none;
+            background: var(--bg);
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-2);
+            font-size: 18px;
+            transition: all var(--transition);
+        }
+
+        .modal-close:hover { background: var(--border); }
+
+        .modal-icon {
+            width: 64px; height: 64px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 32px;
+        }
+
+        .modal-icon.success { background: var(--primary-light); }
+        .modal-icon.fail { background: var(--danger-light); }
+        .modal-icon.warn { background: var(--warning-light); }
+
+        .modal-title {
+            text-align: center;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-1);
+            margin-bottom: 8px;
+        }
+
+        .modal-msg {
+            text-align: center;
+            font-size: 14px;
+            color: var(--text-2);
+            margin-bottom: 24px;
+        }
+
+        .modal-detail {
+            background: var(--bg);
+            border-radius: var(--radius-sm);
+            padding: 16px;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        .modal-detail label {
+            font-size: 12px;
+            color: var(--text-3);
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        .modal-detail .order-id {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-1);
+            word-break: break-all;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .modal-actions { display: flex; gap: 10px; }
+
+        .modal-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition);
+        }
+
+        .modal-btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+        }
+
+        .modal-btn-primary:hover { filter: brightness(1.05); transform: translateY(-1px); }
+
+        .modal-btn-secondary {
+            background: var(--bg);
+            color: var(--text-2);
+            border: 1px solid var(--border);
+        }
+
+        .modal-btn-secondary:hover { background: var(--border); }
+
+        .modal-btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .modal-btn-ghost {
+            background: transparent;
+            color: var(--text-3);
+            border: 1px solid var(--border);
+        }
+
+        /* Pay modal specific */
+        .pay-modal { max-width: 480px; }
+
+        .pay-countdown-box {
+            background: var(--danger-light);
+            border: 1px solid rgba(239,68,68,0.2);
+            border-radius: var(--radius-sm);
+            padding: 16px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .pay-countdown-label {
+            font-size: 12px;
+            color: var(--danger);
+            font-weight: 500;
+            margin-bottom: 6px;
+        }
+
+        .pay-countdown-time {
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--danger);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .pay-product {
+            background: var(--bg);
+            border-radius: var(--radius-sm);
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .pay-product-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-1);
+            margin-bottom: 6px;
+        }
+
+        .pay-product-price {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: var(--shadow-lg);
+            z-index: 2000;
+            animation: toastIn 0.3s ease, toastOut 0.3s ease 2.7s forwards;
+            max-width: 360px;
+        }
+
+        @keyframes toastIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes toastOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+
+        .toast-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .toast-dot.green { background: var(--primary); }
+        .toast-dot.red { background: var(--danger); }
+        .toast-dot.orange { background: var(--warning); }
+
+        .toast-text { font-size: 13px; color: var(--text-1); font-weight: 500; }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-3);
+        }
+
+        .empty-state svg {
+            width: 64px; height: 64px;
+            stroke: #CBD5E1;
+            stroke-width: 1.5;
+            fill: none;
+            margin-bottom: 16px;
+        }
+
+        .empty-state .title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-2);
+            margin-bottom: 8px;
+        }
+
+        .empty-state .hint {
+            font-size: 13px;
+            color: var(--text-3);
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .empty-state .action {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-2);
+            cursor: pointer;
+            transition: all var(--transition);
+        }
+
+        .empty-state .action:hover {
+            background: var(--surface);
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .empty-state .action svg {
+            width: 14px; height: 14px;
+            stroke: currentColor;
+            stroke-width: 2;
+            fill: none;
+            margin: 0;
+        }
+
+        /* Mobile */
+        .hamburger {
+            display: none;
+            width: 36px; height: 36px;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            border-radius: var(--radius-sm);
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .hamburger span {
+            width: 18px; height: 2px;
+            background: var(--text-2);
+            border-radius: 1px;
+        }
+
+        @media (max-width: 1024px) {
+            .products-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.open { transform: translateX(0); }
+            .main { margin-left: 0; }
+            .hamburger { display: flex; }
+            .stats-bar { flex-wrap: wrap; }
+            .stats-bar .stat-mini { flex: 1 1 calc(50% - 6px); min-width: 140px; }
+            .products-grid { grid-template-columns: 1fr; }
+            .page-content { padding: 20px 16px; }
+            .content-layout { grid-template-columns: 1fr; }
+        }
+
+        /* ===== Login Modal ===== */
+        .login-modal .modal-icon { background: var(--primary-light); }
+        .login-modal h2 { text-align: center; font-size: 20px; font-weight: 700; color: var(--text-1); margin-bottom: 24px; }
+        .login-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            font-family: var(--font);
+            margin-bottom: 12px;
+            transition: border-color var(--transition);
+            background: var(--bg);
+            color: var(--text-1);
+        }
+        .login-input:focus { outline: none; border-color: var(--primary); background: var(--surface); }
+        .login-input::placeholder { color: var(--text-3); }
+        .login-hint { font-size: 12px; color: var(--text-3); text-align: center; margin-top: 8px; }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-logo">
+            <div class="logo-mark">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                </div>
+                <div>
+                    <div class="logo-text">闪电秒杀</div>
+                    <div class="logo-sub">Seckill System</div>
+                </div>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <div class="nav-label">导航</div>
+            <a class="nav-item active" href="#">
+                <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
+                秒杀专区
+            </a>
+            <a class="nav-item" href="#" onclick="showToast('订单功能开发中', 'orange')">
+                <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+                我的订单
+            </a>
+        </nav>
+
+        <div class="sidebar-user">
+            <div class="user-card" id="userCard">
+                <div class="user-avatar" id="userAvatar">访客</div>
+                <div>
+                    <div class="user-name" id="userName">未登录</div>
+                    <div class="user-role">点击切换用户</div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+        <div class="topbar">
+            <div class="topbar-left">
+                <button class="hamburger" onclick="toggleSidebar()">
+                    <span></span><span></span><span></span>
+                </button>
+                <div>
+                    <div class="topbar-title">限时秒杀</div>
+                    <div class="topbar-breadcrumb">首页 / 秒杀专区</div>
+                </div>
+            </div>
+            <div class="topbar-right">
+                <button class="topbar-btn" onclick="loadProducts()" title="刷新">
+                    <svg viewBox="0 0 24 24" stroke="currentColor" fill="none"><polyline points="23,4 23,10 17,10"/><polyline points="1,20 1,14 7,14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="page-content">
+            <!-- Two-Column Layout -->
+            <div class="content-layout">
+                <!-- Left: Stats + Products -->
+                <div>
+                    <!-- Stats Bar -->
+                    <div class="stats-bar" style="margin-bottom:28px;">
+                        <div class="stat-mini">
+                            <div class="stat-icon green">
+                                <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+                            </div>
+                            <div class="stat-info">
+                                <h4>秒杀商品</h4>
+                                <p id="statActiveProducts">-</p>
+                            </div>
+                        </div>
+                        <div class="stat-mini">
+                            <div class="stat-icon blue">
+                                <svg viewBox="0 0 24 24"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg>
+                            </div>
+                            <div class="stat-info">
+                                <h4>今日订单</h4>
+                                <p id="statTodayOrders">-</p>
+                            </div>
+                        </div>
+                        <div class="stat-mini">
+                            <div class="stat-icon orange">
+                                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
+                            </div>
+                            <div class="stat-info">
+                                <h4>系统状态</h4>
+                                <p style="font-size:16px; color: var(--primary);">运行中</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-header">
+                        <div>
+                            <div class="section-title">热门秒杀</div>
+                            <div class="section-subtitle">商品数量有限，先到先得</div>
+                        </div>
+                    </div>
+                    <div class="products-grid" id="products">
+                        <!-- JS renders here -->
+                    </div>
+                </div>
+
+                <!-- Right: Live Feed & Ranking -->
+                <div class="live-sidebar">
+                    <!-- Real-time Orders -->
+                    <div class="live-card">
+                        <div class="live-card-header">
+                            <div class="live-card-title">
+                                <span class="pulse-dot"></span>
+                                实时抢购
+                            </div>
+                        </div>
+                        <div class="live-card-body" id="liveFeed">
+                            <div class="live-empty">
+                                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
+                                <div class="title">暂无抢购记录</div>
+                                <div class="hint">秒杀开始后将实时显示<br>抢购动态</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Hot Ranking -->
+                    <div class="live-card">
+                        <div class="live-card-header">
+                            <div class="live-card-title">🔥 热门排行</div>
+                        </div>
+                        <div class="rank-list" id="rankList">
+                            <!-- JS renders here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal-overlay login-modal">
+        <div class="modal">
+            <div class="modal-icon success">
+                <svg viewBox="0 0 24 24" width="32" height="32" stroke="#10B981" stroke-width="2" fill="none"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </div>
+            <h2>请输入用户ID</h2>
+            <input type="text" class="login-input" id="inputUserId" placeholder="例如: USER001" onkeydown="if(event.key==='Enter')setUserId()">
+            <button class="modal-btn modal-btn-primary" onclick="setUserId()" style="width:100%;">确认进入</button>
+            <div class="login-hint">用户ID用于下单和查询订单记录</div>
+        </div>
+    </div>
+
+    <!-- Result Modal -->
+    <div id="resultModal" class="modal-overlay">
+        <div class="modal">
+            <button class="modal-close" onclick="closeResultModal()">×</button>
+            <div class="modal-icon" id="resultIconBox">
+                <span id="resultIcon">🎉</span>
+            </div>
+            <div class="modal-title" id="resultTitle">秒杀成功</div>
+            <div class="modal-msg" id="resultMessage">恭喜您抢到了商品！</div>
+            <div class="modal-detail" id="resultOrderBox" style="display:none;">
+                <label>订单号</label>
+                <div class="order-id" id="resultOrderId"></div>
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn modal-btn-secondary" onclick="closeResultModal()">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pay Modal -->
+    <div id="payModal" class="modal-overlay">
+        <div class="modal pay-modal">
+            <button class="modal-close" onclick="closePayModal()">×</button>
+            <div class="modal-icon" style="background:#DBEAFE;">
+                <span>💳</span>
+            </div>
+            <div class="modal-title">待支付订单</div>
+            <div class="pay-product">
+                <div class="pay-product-name" id="payProductName"></div>
+                <div class="pay-product-price" id="payPrice"></div>
+            </div>
+            <div class="modal-detail">
+                <label>订单号</label>
+                <div class="order-id" id="payOrderId"></div>
+            </div>
+            <div class="pay-countdown-box">
+                <div class="pay-countdown-label">⏰ 支付倒计时</div>
+                <div class="pay-countdown-time" id="payCountdown">5:00</div>
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn modal-btn-ghost" onclick="cancelCurrentOrder()">取消订单</button>
+                <button class="modal-btn modal-btn-primary" id="payBtn" onclick="payCurrentOrder()">确认支付</button>
+            </div>
+            <div style="text-align:center;margin-top:12px;font-size:11px;color:var(--text-3);">超时未支付，订单将自动取消，库存将退回</div>
+        </div>
+    </div>
+
+<script>
+const API_BASE = 'http://localhost:9000/api';
+const BG_COLORS = [
+    'linear-gradient(135deg, #667eea22, #764ba222)',
+    'linear-gradient(135deg, #10B98122, #05966922)',
+    'linear-gradient(135deg, #F59E0B22, #D9770622)',
+    'linear-gradient(135deg, #EF444422, #DC262622)',
+    'linear-gradient(135deg, #3B82F622, #2563EB22)',
+];
+const ICONS = ['📱','💻','🎧','⌚','📲','🎮','📷','🎵'];
+const LIVE_USERS = ['小王','小明','小红','张三','李四','老张','阿花','阿强','路人甲','用户'];
+let currentUserId = localStorage.getItem('seckill_user_id') || '';
+let currentOrder = null;
+let payTimer = null;
+let payTimerStarted = false;
+let payCountdown = 300;
+let liveFeedItems = [];
+let productsCache = [];
+
+function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+}
+
+// Toast
+function showToast(msg, type = 'green') {
+    const existing = document.querySelector('.toast');
+    if (existing) existing.remove();
+    const t = document.createElement('div');
+    t.className = 'toast';
+    t.innerHTML = `<div class="toast-dot ${type}"></div><div class="toast-text">${msg}</div>`;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 3000);
+}
+
+// Init
+if (currentUserId) {
+    onLoginSuccess(currentUserId);
+    loadProducts();
+} else {
+    document.getElementById('loginModal').classList.add('show');
+}
+
+document.getElementById('userCard').addEventListener('click', () => {
+    if (!confirm('确定要切换用户吗？当前待支付订单将被取消。')) return;
+    if (payTimer) clearInterval(payTimer);
+    payTimerStarted = false;
+    currentOrder = null;
+    localStorage.removeItem('seckill_user_id');
+    localStorage.removeItem('pending_order');
+    currentUserId = '';
+    document.getElementById('userName').textContent = '未登录';
+    document.getElementById('userAvatar').textContent = '访客';
+    document.getElementById('loginModal').classList.add('show');
+});
+
+function onLoginSuccess(userId) {
+    document.getElementById('userName').textContent = userId;
+    document.getElementById('userAvatar').textContent = userId.slice(0, 2).toUpperCase();
+    document.getElementById('loginModal').classList.remove('show');
+}
+
+function setUserId() {
+    const userId = document.getElementById('inputUserId').value.trim();
+    if (!userId) return;
+    currentUserId = userId;
+    localStorage.setItem('seckill_user_id', userId);
+    onLoginSuccess(userId);
+    loadProducts();
+}
+
+async function loadProducts() {
+    try {
+        const res = await fetch(`${API_BASE}/seckill/products`);
+        const data = await res.json();
+        if (data.code === 200) {
+            productsCache = data.products || [];
+            renderProducts(productsCache);
+            renderRankList(productsCache);
+            const active = productsCache.filter(p => p.seckill_active).length;
+            document.getElementById('statActiveProducts').textContent = active;
+        }
+    } catch (e) {
+        showToast('加载商品失败', 'red');
+    }
+}
+
+function renderRankList(products) {
+    const container = document.getElementById('rankList');
+    if (!products.length) {
+        container.innerHTML = '<div class="live-empty"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg><div class="title">暂无数据</div><div class="hint">商品上架后将显示排行</div></div>';
+        return;
+    }
+
+    const maxStock = Math.max(...products.map(p => p.stock || 1));
+
+    const sorted = [...products]
+        .filter(p => p.seckill_active)
+        .sort((a, b) => (b.stock - (b.seckill_stock || 0)) - (a.stock - (a.seckill_stock || 0)))
+        .slice(0, 5);
+
+    if (!sorted.length) {
+        container.innerHTML = '<div class="live-empty"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg><div class="title">暂无秒杀中商品</div><div class="hint">秒杀活动开始后将显示排行</div></div>';
+        return;
+    }
+
+    container.innerHTML = sorted.map((p, i) => {
+        const sold = (p.stock || 0) - (p.seckill_stock || 0);
+        const pct = maxStock > 0 ? Math.round((sold / maxStock) * 100) : 0;
+        const numClass = i === 0 ? 'top1' : i === 1 ? 'top2' : i === 2 ? 'top3' : 'normal';
+
+        return `
+        <div class="rank-item">
+            <div class="rank-num ${numClass}">${i + 1}</div>
+            <div class="rank-info">
+                <div class="name">${p.name}</div>
+                <div class="meta">已售 ${sold} 件</div>
+            </div>
+            <div class="rank-bar-wrap">
+                <div class="rank-bar" style="width:${pct}%"></div>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function addLiveFeedItem(productName) {
+    const user = LIVE_USERS[Math.floor(Math.random() * LIVE_USERS.length)];
+    const now = new Date();
+    const time = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+
+    liveFeedItems.unshift({ user, productName, time });
+    if (liveFeedItems.length > 20) liveFeedItems.pop();
+
+    const container = document.getElementById('liveFeed');
+    if (!container) return;
+
+    container.innerHTML = liveFeedItems.map(item => `
+        <div class="live-item">
+            <div class="live-avatar">${item.user.slice(0, 1)}</div>
+            <div class="live-info">
+                <div class="user">${item.user}</div>
+                <div class="action">抢到了 ${item.productName}</div>
+            </div>
+            <div class="live-time">${item.time}</div>
+        </div>`).join('');
+}
+
+function renderProducts(products) {
+    const container = document.getElementById('products');
+    if (!products.length) {
+        container.innerHTML = `
+            <div class="empty-state" style="grid-column:1/-1;">
+                <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+                <div class="title">暂无秒杀商品</div>
+                <div class="hint">管理员尚未添加秒杀商品<br>请稍后再来</div>
+                <button class="action" onclick="loadProducts()">
+                    <svg viewBox="0 0 24 24" stroke="currentColor" fill="none"><polyline points="23,4 23,10 17,10"/><polyline points="1,20 1,14 7,14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+                    刷新试试
+                </button>
+            </div>`;
+        return;
+    }
+
+    container.innerHTML = products.map((p, i) => {
+        const active = p.seckill_active;
+        const stock = p.seckill_stock || 0;
+        const stockPct = Math.min((stock / (p.stock || 1)) * 100, 100);
+        const isDanger = stockPct < 20;
+
+        let btn, btnClass, btnText, btnClick;
+        if (stock <= 0 && active) {
+            btnClass = 'btn-seckill soldout'; btnText = '已售罄'; btnClick = '';
+        } else if (!active) {
+            btnClass = 'btn-seckill disabled'; btnText = '未开始'; btnClick = '';
+        } else if (currentOrder && currentOrder.product_id === p.id) {
+            btnClass = 'btn-seckill pending'; btnText = '待支付 ✓'; btnClick = `showPayModal('${p.name}', '${p.price}', '${currentOrder.order_id}')`;
+        } else {
+            btnClass = 'btn-seckill active'; btnText = '⚡ 立即秒杀'; btnClick = `doSeckill('${p.id}', '${p.name}', '${p.price}')`;
+        }
+
+        return `
+        <div class="product-card ${!active ? 'inactive' : ''}">
+            <div class="product-visual">
+                <div class="product-visual-bg" style="background:${BG_COLORS[i % 5]}"></div>
+                <div class="product-visual-icon">${ICONS[i % ICONS.length]}</div>
+                ${active ? `<div class="product-tag"><svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>限时</div>` : ''}
+            </div>
+            <div class="product-body">
+                <div class="product-name">${p.name}</div>
+                <div class="product-price-row">
+                    <span class="product-price">¥${parseFloat(p.price).toFixed(2)}</span>
+                    <span class="product-price-original">¥${(p.price * 1.5).toFixed(2)}</span>
+                </div>
+                <div class="product-meta">
+                    <div class="product-stock">
+                        剩余 <strong id="stock-${p.id}">${stock}</strong> 件
+                        <div class="stock-bar-wrap">
+                            <div class="stock-bar ${isDanger ? 'danger' : ''}" style="width:${stockPct}%"></div>
+                        </div>
+                    </div>
+                    <div class="product-timer">
+                        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
+                        ${active ? '抢购中' : '未开始'}
+                    </div>
+                </div>
+                <button class="${btnClass}" id="btn-${p.id}" ${!btnClick ? 'disabled' : ''} onclick="${btnClick}">
+                    ${btnText}
+                </button>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+async function doSeckill(productId, productName, productPrice) {
+    if (!currentUserId) {
+        document.getElementById('loginModal').classList.add('show');
+        return;
+    }
+    const btn = document.getElementById(`btn-${productId}`);
+    btn.disabled = true;
+    btn.textContent = '正在抢购...';
+    btn.className = 'btn-seckill active';
+
+    try {
+        const res = await fetch(`${API_BASE}/seckill/buy?user_id=${currentUserId}&product_id=${productId}&quantity=1`, { method: 'POST' });
+        const data = await res.json();
+
+        if (data.code === 200) {
+            currentOrder = { order_id: data.order_id, product_id: productId, product_name: productName, price: productPrice };
+            localStorage.setItem('pending_order', JSON.stringify(currentOrder));
+            showPayModal(productName, productPrice, data.order_id);
+            btn.className = 'btn-seckill pending';
+            btn.textContent = '待支付 ✓';
+            btn.disabled = false;
+            btn.onclick = () => showPayModal(productName, productPrice, data.order_id);
+            if (document.getElementById(`stock-${productId}`)) {
+                document.getElementById(`stock-${productId}`).textContent = data.remaining_stock;
+            }
+            // 添加到实时动态
+            addLiveFeedItem(productName);
+
+        } else if (data.code === 403) {
+            let icon = '😢', title = '提示', msg = '抢购失败', iconClass = 'fail';
+            if (data.msg === 'Sold out') {
+                msg = '商品已售罄'; icon = '🔥'; iconClass = 'fail';
+                btn.className = 'btn-seckill soldout'; btn.textContent = '已售罄'; btn.disabled = true;
+                if (document.getElementById(`stock-${productId}`)) document.getElementById(`stock-${productId}`).textContent = '0';
+            } else if (data.msg === 'Already purchased') {
+                msg = '您已购买过该商品'; icon = '🚫'; iconClass = 'warn';
+                btn.className = 'btn-seckill disabled'; btn.textContent = '已购买'; btn.disabled = true;
+            } else if (data.msg === 'Cooldown, please wait') {
+                msg = '取消订单后需等待60秒冷却时间'; icon = '⏰'; iconClass = 'warn';
+                btn.className = 'btn-seckill disabled'; btn.textContent = '冷却中'; btn.disabled = true;
+            } else {
+                btn.className = 'btn-seckill active'; btn.textContent = '再试一次'; btn.disabled = false;
+            }
+            document.getElementById('resultIcon').textContent = icon;
+            document.getElementById('resultIconBox').className = `modal-icon ${iconClass}`;
+            document.getElementById('resultTitle').textContent = title;
+            document.getElementById('resultMessage').textContent = msg;
+            document.getElementById('resultOrderBox').style.display = 'none';
+            document.getElementById('resultModal').classList.add('show');
+        } else {
+            throw new Error(data.msg || '未知错误');
+        }
+    } catch (e) {
+        document.getElementById('resultIcon').textContent = '❌';
+        document.getElementById('resultIconBox').className = 'modal-icon fail';
+        document.getElementById('resultTitle').textContent = '请求失败';
+        document.getElementById('resultMessage').textContent = e.message;
+        document.getElementById('resultOrderBox').style.display = 'none';
+        document.getElementById('resultModal').classList.add('show');
+        btn.className = 'btn-seckill active'; btn.textContent = '再试一次'; btn.disabled = false;
+    }
+}
+
+function showPayModal(productName, price, orderId) {
+    if (!payTimerStarted) { payCountdown = 300; }
+    document.getElementById('payProductName').textContent = productName;
+    document.getElementById('payPrice').textContent = '¥' + parseFloat(price).toFixed(2);
+    document.getElementById('payOrderId').textContent = orderId;
+    document.getElementById('payCountdown').textContent = formatTime(payCountdown);
+    document.getElementById('payBtn').disabled = false;
+    document.getElementById('payBtn').textContent = '确认支付';
+    document.getElementById('payModal').classList.add('show');
+
+    if (!payTimerStarted) {
+        payTimerStarted = true;
+        if (payTimer) clearInterval(payTimer);
+        payTimer = setInterval(() => {
+            payCountdown--;
+            document.getElementById('payCountdown').textContent = formatTime(payCountdown);
+            if (payCountdown <= 0) {
+                clearInterval(payTimer);
+                payTimerStarted = false;
+                cancelCurrentOrder();
+            }
+        }, 1000);
+    }
+}
+
+function closePayModal() { document.getElementById('payModal').classList.remove('show'); }
+function closeResultModal() { document.getElementById('resultModal').classList.remove('show'); }
+
+function formatTime(s) { return `${Math.floor(s/60)}:${(s%60).toString().padStart(2,'0')}`; }
+
+async function payCurrentOrder() {
+    if (!currentOrder) return;
+    const btn = document.getElementById('payBtn');
+    btn.disabled = true; btn.textContent = '支付中...';
+    try {
+        const res = await fetch(`${API_BASE}/order/pay?order_id=${currentOrder.order_id}`, { method: 'POST' });
+        const data = await res.json();
+        if (data.code === 200) {
+            clearInterval(payTimer); payTimerStarted = false;
+            localStorage.removeItem('pending_order');
+            currentOrder = null;
+            document.getElementById('payModal').classList.remove('show');
+            showToast('支付成功！', 'green');
+            loadProducts();
+        } else {
+            showToast('支付失败: ' + (data.msg || '请重试'), 'red');
+            btn.disabled = false; btn.textContent = '确认支付';
+        }
+    } catch (e) {
+        showToast('支付请求失败', 'red');
+        btn.disabled = false; btn.textContent = '确认支付';
+    }
+}
+
+async function cancelCurrentOrder() {
+    if (!currentOrder) return;
+    const orderId = currentOrder.order_id;
+    const productId = currentOrder.product_id;
+    try {
+        await fetch(`${API_BASE}/order/cancel?order_id=${orderId}`, { method: 'POST' });
+    } catch(e) {}
+    clearInterval(payTimer); payTimerStarted = false;
+    localStorage.removeItem('pending_order');
+    currentOrder = null;
+    document.getElementById('payModal').classList.remove('show');
+    loadProducts();
+}
+
+// Poll
+setInterval(loadProducts, 3000);
+</script>
+</body>
+</html>

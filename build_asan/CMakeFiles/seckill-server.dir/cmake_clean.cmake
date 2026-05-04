@@ -1,0 +1,41 @@
+file(REMOVE_RECURSE
+  "CMakeFiles/seckill-server.dir/src/common/config.cpp.o"
+  "CMakeFiles/seckill-server.dir/src/common/config.cpp.o.d"
+  "CMakeFiles/seckill-server.dir/src/common/logger.cpp.o"
+  "CMakeFiles/seckill-server.dir/src/common/logger.cpp.o.d"
+  "CMakeFiles/seckill-server.dir/src/common/metrics.cpp.o"
+  "CMakeFiles/seckill-server.dir/src/common/metrics.cpp.o.d"
+  "CMakeFiles/seckill-server.dir/src/handler/admin_handler.cpp.o"
+  "CMakeFiles/seckill-server.dir/src/handler/admin_handler.cpp.o.d"
+  "CMakeFiles/seckill-server.dir/src/handler/health_handler.cpp.o"
+  "CMakeFiles/seckill-server.dir/src/handler/health_handler.cpp.o.d"
+  "CMakeFiles/seckill-server.dir/src/handler/metrics_handler.cpp.o"
+  "CMakeFiles/seckill-server.dir/src/handler/metrics_handler.cpp.o.d"
+  "CMakeFiles/seckill-server.dir/src/handler/order_handler.cpp.o"
+  "CMakeFiles/seckill-server.dir/src/handler/order_handler.cpp.o.d"
+  "CMakeFiles/seckill-server.dir/src/handler/seckill_handler.cpp.o"
+  "CMakeFiles/seckill-server.dir/src/handler/seckill_handler.cpp.o.d"
+  "CMakeFiles/seckill-server.dir/src/handler/sse_handler.cpp.o"
+  "CMakeFiles/seckill-server.dir/src/handler/sse_handler.cpp.o.d"
+  "CMakeFiles/seckill-server.dir/src/main.cpp.o"
+  "CMakeFiles/seckill-server.dir/src/main.cpp.o.d"
+  "CMakeFiles/seckill-server.dir/src/server/http_server.cpp.o"
+  "CMakeFiles/seckill-server.dir/src/server/http_server.cpp.o.d"
+  "CMakeFiles/seckill-server.dir/src/service/mysql_service.cpp.o"
+  "CMakeFiles/seckill-server.dir/src/service/mysql_service.cpp.o.d"
+  "CMakeFiles/seckill-server.dir/src/service/order_processor.cpp.o"
+  "CMakeFiles/seckill-server.dir/src/service/order_processor.cpp.o.d"
+  "CMakeFiles/seckill-server.dir/src/service/rate_limiter.cpp.o"
+  "CMakeFiles/seckill-server.dir/src/service/rate_limiter.cpp.o.d"
+  "CMakeFiles/seckill-server.dir/src/service/redis_service.cpp.o"
+  "CMakeFiles/seckill-server.dir/src/service/redis_service.cpp.o.d"
+  "CMakeFiles/seckill-server.dir/src/service/timeout_checker.cpp.o"
+  "CMakeFiles/seckill-server.dir/src/service/timeout_checker.cpp.o.d"
+  "seckill-server"
+  "seckill-server.pdb"
+)
+
+# Per-language clean rules from dependency scanning.
+foreach(lang CXX)
+  include(CMakeFiles/seckill-server.dir/cmake_clean_${lang}.cmake OPTIONAL)
+endforeach()
