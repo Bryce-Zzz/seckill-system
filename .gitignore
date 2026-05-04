@@ -21,3 +21,15 @@ redis_orders.txt
 
 # 前端 node_modules (如果你有的话)
 node_modules/
+
+# --- 新增的过滤规则 ---
+
+# 忽略所有以 build 开头的编译目录
+build*/
+
+# 忽略 vcpkg 包管理器及其下载的巨量源码
+vcpkg/
+
+# 忽略所有备份和临时文件
+*.bak
+*.bak.*
