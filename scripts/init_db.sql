@@ -19,7 +19,7 @@ CREATE TABLE products (
 -- 订单表
 DROP TABLE IF EXISTS orders;
 CREATE TABLE orders (
-    order_id VARCHAR(64) PRIMARY KEY COMMENT '订单ID',
+    order_id BIGINT UNSIGNED PRIMARY KEY COMMENT '订单ID',
     user_id VARCHAR(64) NOT NULL COMMENT '用户ID',
     product_id VARCHAR(64) NOT NULL COMMENT '商品ID',
     quantity INT NOT NULL DEFAULT 1 COMMENT '购买数量',

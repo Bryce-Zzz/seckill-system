@@ -4,7 +4,6 @@
 #include <thread>
 #include <chrono>
 #include <mysql/mysql.h>
-#include "common/globals.h"
 #include "common/snowflake.h"
 #include "server/http_server.h"
 #include "handler/sse_handler.h"
@@ -111,13 +110,6 @@ int main(int argc, char** argv) {
     MySQLPool::instance().init(cfg.mysql.host, cfg.mysql.user, cfg.mysql.password,
                               cfg.mysql.database, cfg.mysql.port, cfg.mysql.pool_size);
 
-    // 初始化 MySQL Service (兼容旧接口)
-    if (!MySQLService::instance().init(cfg.mysql.host, cfg.mysql.port,
-                                      cfg.mysql.user, cfg.mysql.password,
-                                      cfg.mysql.database, cfg.mysql.pool_size)) {
-        Logger::instance().error("Failed to init MySQL");
-        return 1;
-    }
 
     // 初始化本地库存缓存（需要在 MySQL 初始化后调用）
     RedisService::instance().initAllLocalStock();
