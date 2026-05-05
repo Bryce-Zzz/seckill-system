@@ -68,7 +68,6 @@ bool RedisService::init(const std::string& host, int port,
     Logger::instance().info("RedisService initialized: host=" + host +
                             ", pool_size=" + std::to_string(pool_size) +
                             ", seckill_sha=" + (seckill_sha_.empty() ? "UNLOADED" : seckill_sha_.substr(0, 8) + "..."));
-    initAllLocalStock();
     return true;
 }
 

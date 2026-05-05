@@ -1,620 +1,197 @@
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
 #include <iostream>
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
 #include <memory>
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
 #include <csignal>
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
 #include <thread>
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
 #include <chrono>
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
+#include <mysql/mysql.h>
 #include "common/globals.h"
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
+#include "common/snowflake.h"
 #include "server/http_server.h"
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
 #include "handler/sse_handler.h"
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
 #include "service/redis_service.h"
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
 #include "service/mysql_service.h"
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
+#include "service/mysql_pool.h"
 #include "service/order_processor.h"
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
 #include "service/timeout_checker.h"
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
 #include "service/rate_limiter.h"
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
 #include "common/logger.h"
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
 #include "common/config.h"
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
+#include "mq/IMessageQueue.h"
 
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
 // 全局运行标志定义
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
 bool g_running = true;
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
 
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
+// 全局雪花算法 ID 生成器（workerId=1，单机部署；分布式环境从配置/环境变量读取）
+Snowflake g_snowflake(1);
+
+// 热更新：保存配置路径供 SIGHUP 处理器使用
+std::string g_config_path = "config/config.yaml";
+
+/**
+ * SIGHUP 信号处理器：热更新配置
+ * 收到 kill -1 时，自动重新加载 config.yaml
+ * 可动态修改：限流参数、日志级别、Stream 配置等
+ */
+void handle_sighup(int sig) {
+    if (sig == SIGHUP) {
+        // 注意：Logger 本身需要热更新日志级别，单独处理
+        Logger::instance().info("Received SIGHUP, reloading config from: " + g_config_path);
+
+        // 1. 重新加载配置
+        if (Config::instance().reload(g_config_path)) {
+            // 2. 热更新限流器参数
+            auto& cfg = Config::instance();
+            RateLimiter::instance().update_params(
+                cfg.rate_limit.token_rate.load(),
+                cfg.rate_limit.token_capacity.load(),
+                cfg.rate_limit.window_size.load(),
+                cfg.rate_limit.window_max.load()
+            );
+
+            // 3. 热更新日志级别
+            Logger::instance().set_level(cfg.log.level);
+
+            Logger::instance().info("Config hot-reload SUCCESS: rate_limit and log_level updated");
+        } else {
+            Logger::instance().error("Config hot-reload FAILED!");
+        }
+    }
+}
+
 void signal_handler(int sig) {
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
     (void)sig;
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
     g_running = false;
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
 }
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
 
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
 int main(int argc, char** argv) {
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
+    // ⚠️ MySQL 库必须在所有线程创建前初始化！
+    if (mysql_library_init(0, nullptr, nullptr) != 0) {
+        std::cerr << "[ERROR] mysql_library_init failed" << std::endl;
+        return 1;
+    }
+
     std::cout << "=======================================\n";
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
-    std::cout << "     C++ Seckill System v2.0\n";
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
-    std::cout << "=======================================\n\n";
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
+    std::cout << "     C++ Seckill System v3.0\n";
+    std::cout << "  (Redis Stream + MySQL Consumer)\n";
+    std::cout << "=======================================\n";
+    std::cout << "\n[CRITICAL] Snowflake Worker ID: " << g_snowflake.getWorkerId() << "\n";
+    std::cout << "(分布式部署时必须确保各节点 worker_id 互不冲突！)\n\n";
 
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
     // 加载配置
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
-    std::string config_path = "config/config.yaml";
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
     if (argc > 1) {
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
-        config_path = argv[1];
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
+        g_config_path = argv[1];
     }
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
-
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
-    if (!Config::instance().load(config_path)) {
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
-        std::cerr << "Failed to load config: " << config_path << "\n";
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
+    
+    if (!Config::instance().load(g_config_path)) {
+        std::cerr << "[ERROR] Config load failed: " << g_config_path << std::endl;
         return 1;
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
     }
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
 
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
     auto& cfg = Config::instance();
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
 
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
     // 初始化日志（支持 JSON 格式）
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
     Logger::instance().init(cfg.log.file, cfg.log.level, cfg.log.format);
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
     Logger::instance().info("Starting seckill system...");
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
 
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
-    // 初始化 Redis
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
+    // [CRITICAL] 醒目日志：防止分布式部署时 worker_id 冲突被忽略
+    Logger::instance().warn("[CRITICAL] Snowflake Worker ID: " + std::to_string(g_snowflake.getWorkerId()) +
+                            " — 确保分布式环境下各节点 worker_id 互不冲突！");
+
+    // 初始化 Redis（主连接，用于 HTTP 秒杀请求）
     if (!RedisService::instance().init(cfg.redis.host, cfg.redis.port,
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
                                       cfg.redis.password, cfg.redis.db,
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
                                       cfg.redis.pool_size)) {
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
         Logger::instance().error("Failed to init Redis");
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
         return 1;
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
     }
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
+    
+    // Lua 脚本已在 RedisService::init() 内部预加载（EVALSHA 极致优化：只传 40 字节 SHA1）
 
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
-    // 初始化 MySQL
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
+    // 初始化 MySQL 连接池
+    MySQLPool::instance().init(cfg.mysql.host, cfg.mysql.user, cfg.mysql.password,
+                              cfg.mysql.database, cfg.mysql.port, cfg.mysql.pool_size);
+
+    // 初始化 MySQL Service (兼容旧接口)
     if (!MySQLService::instance().init(cfg.mysql.host, cfg.mysql.port,
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
                                       cfg.mysql.user, cfg.mysql.password,
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
                                       cfg.mysql.database, cfg.mysql.pool_size)) {
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
         Logger::instance().error("Failed to init MySQL");
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
         return 1;
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
     }
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
 
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
+    // 初始化本地库存缓存（需要在 MySQL 初始化后调用）
+    RedisService::instance().initAllLocalStock();
+
     // 初始化限流器
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
     RateLimiter::instance().init(cfg.rate_limit.token_rate, cfg.rate_limit.token_capacity,
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
                                  cfg.rate_limit.window_size, cfg.rate_limit.window_max);
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
-    // 临时测试
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
-    fprintf(stderr, "DEBUG001: entering main...
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
-"); fflush(stderr);
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
-    fprintf(stderr, "MAIN START
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
-");
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
-    fflush(stderr);
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
 
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
+    // sw::redis++ RedisAsync 连接池已在 RedisService::init() 内部建立
 
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
-    // 初始化订单处理器
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
-    OrderProcessor::instance().init(cfg.seckill.order_stream_key);
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
-    OrderProcessor::instance().start();
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
+    // ========== 创建 MQ 实例（依赖注入）==========
+    // 使用独立的 Redis 连接，专门用于消费 Stream，不会阻塞 HTTP 线程
+    std::shared_ptr<IMessageQueue> mq = createRedisStreamMQ(
+        cfg.redis.host,
+        cfg.redis.port,
+        cfg.redis.password,
+        cfg.redis.db
+    );
+    
+    // 初始化订单处理器（注入 MQ 实例）
+    OrderProcessor processor(mq);
+    processor.init(
+        cfg.seckill.order_stream_key,  // topic: "seckill:stream:orders"
+        "mysql_writer_group",           // 消费者组名
+        "node_1_thread_1"                // 消费者名（分布式环境下应使用机器名+线程ID）
+    );
+    processor.start();
 
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
     // 初始化订单超时检查器
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
     TimeoutChecker::instance().init(cfg.timeout.order_timeout_seconds,
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
-                                    cfg.timeout.check_interval_seconds);
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
+                                   cfg.timeout.check_interval_seconds);
     TimeoutChecker::instance().start();
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
 
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
     // 初始化 HTTP 服务器
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
     if (!SeckillHttpServer::instance().init(cfg.server.port, cfg.server.worker_threads)) {
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
         Logger::instance().error("Failed to init HTTP server");
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
         return 1;
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
     }
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
 
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
     // 启动 SSE 服务器（独立端口，用于实时推送）
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
     int sse_port = cfg.server.port + 1;  // SSE 使用 HTTP 端口 + 1
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
     if (!SSEHandler::instance().start(sse_port)) {
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
         Logger::instance().warn("Failed to start SSE server, real-time updates disabled");
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
     } else {
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
         Logger::instance().info("SSE server started on port " + std::to_string(sse_port));
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
     }
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
 
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
     // 注册信号处理
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
     signal(SIGINT, signal_handler);
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
     signal(SIGTERM, signal_handler);
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
+    signal(SIGHUP,  handle_sighup);  // 热更新信号：kill -1
+    Logger::instance().info("Signal handlers registered: SIGINT, SIGTERM, SIGHUP");
 
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
     // 启动服务器
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
     SeckillHttpServer::instance().start();
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
 
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
     std::cout << "\nServer is running. Press Ctrl+C to stop.\n";
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
     std::cout << "SSE events: http://localhost:" << sse_port << "\n\n";
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
 
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
     // 等待退出信号
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
     while (g_running) {
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
         std::this_thread::sleep_for(std::chrono::seconds(1));
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
     }
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
 
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
     Logger::instance().info("Seckill system stopped");
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
 
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
     // 清理
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
     SSEHandler::instance().stop();
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
     SeckillHttpServer::instance().stop();
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
     TimeoutChecker::instance().stop();
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
-    OrderProcessor::instance().stop();
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
+    processor.stop();  // 停止 MQ 消费者
     RedisService::instance().close();
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
     MySQLService::instance().close();
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
+    mysql_library_end();
 
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
     return 0;
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
 }
-    // DEBUG
-    fprintf(stderr, "DEBUG_BEFORE_MYSQL_INIT
-");
-    fflush(stderr);
-
