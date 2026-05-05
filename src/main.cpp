@@ -107,7 +107,7 @@ int main(int argc, char** argv) {
     // Lua 脚本已在 RedisService::init() 内部预加载（EVALSHA 极致优化：只传 40 字节 SHA1）
 
     // 初始化 MySQL 连接池
-    MySQLPool::instance().init(cfg.mysql.host, cfg.mysql.user, cfg.mysql.password,
+    MySQLPool::getInstance().init(cfg.mysql.host, cfg.mysql.user, cfg.mysql.password,
                               cfg.mysql.database, cfg.mysql.port, cfg.mysql.pool_size);
 
 
