@@ -43,6 +43,9 @@ find_library(YAMLCPP yaml-cpp REQUIRED)
 # MySQL client
 find_library(MYSQL_CLIENT mysqlclient REQUIRED)
 
+# uuid (for activity_id generation in admin_handler)
+find_library(UUID uuid REQUIRED)
+
 # OpenSSL (for MD5 in token generation)
 find_package(OpenSSL REQUIRED)
 
@@ -58,12 +61,14 @@ set(SOURCES
     src/common/config.cpp
     src/common/logger.cpp
     src/common/metrics.cpp
+    src/common/snowflake.cpp
     src/server/http_server.cpp
     src/service/redis_service.cpp
     src/service/rate_limiter.cpp
     src/service/mysql_service.cpp
     src/service/order_processor.cpp
     src/service/timeout_checker.cpp
+    src/service/activity_manager.cpp  # 新增：活动状态内存管理
     src/handler/seckill_handler.cpp
     src/handler/order_handler.cpp
     src/handler/admin_handler.cpp
@@ -80,10 +85,11 @@ add_executable(seckill-server ${SOURCES})
 # ==================== 链接库 ====================
 target_link_libraries(seckill-server
     PRIVATE
-    redis++::redis++  # 👈 屠龙刀：自动链接 hiredis
+    redis++::redis++  # 👉 屠龙刀：自动链接 hiredis
     ${LIBHV}
     ${YAMLCPP}
     ${MYSQL_CLIENT}
+    ${UUID}
     OpenSSL::Crypto   # MD5 摘要
     pthread
     dl

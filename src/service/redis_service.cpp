@@ -298,9 +298,10 @@ bool RedisService::tryLocalPreDeduct(const std::string& product_id) {
             int64_t old_val = it->second->fetch_sub(1);
             if (old_val <= 0) {
                 it->second->fetch_add(1);
-                return false;
+                // 缓存可能 stale（启动后 Redis 库存被更新），释放锁后刷新重试
+            } else {
+                return true;
             }
-            return true;
         }
     }
     // 不在 map 中 → 惰性初始化，然后重试一次

@@ -27,4 +27,5 @@ private:
     int worker_threads_ = 4;
     hv::HttpService service_;   // HTTP服务（注册路由）
     hv::HttpServer server_;     // HTTP服务器（包装service）
+    std::thread server_thread_;  // HTTP 服务器线程
 };

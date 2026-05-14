@@ -1,5 +1,4 @@
 #include "server/http_server.h"
-#include "common/logger.h"
 #include "handler/seckill_handler.h"
 #include "handler/order_handler.h"
 #include "handler/admin_handler.h"
@@ -7,7 +6,7 @@
 #include "handler/metrics_handler.h"
 #include <sstream>
 #include <fstream>
-#include <sstream>
+#include <iostream>
 #include <climits>
 
 // 静态文件服务
@@ -74,12 +73,11 @@ static int handle_static_files(HttpRequest* req, HttpResponse* resp) {
 bool SeckillHttpServer::init(int port, int worker_threads) {
     port_ = port;
     
-    // 自动检测 CPU 核心数
     std::cerr << "[DEBUG] HTTP server init: port=" << port << ", worker_threads=" << worker_threads << std::endl;
     
     if (worker_threads <= 0) {
         worker_threads_ = std::thread::hardware_concurrency();
-        if (worker_threads_ == 0) worker_threads_ = 4;  // fallback
+        if (worker_threads_ == 0) worker_threads_ = 4;
         std::cerr << "[DEBUG] Auto-detected " << worker_threads_ << " CPU cores" << std::endl;
         Logger::instance().info("Auto-detected " + std::to_string(worker_threads_) + " CPU cores");
     } else {
@@ -107,19 +105,34 @@ bool SeckillHttpServer::init(int port, int worker_threads) {
     });
 
     Logger::instance().info("HTTP server initialized on port " + std::to_string(port_));
+    std::cerr << "[DEBUG] HTTP server initialized on port " << port_ << std::endl;
     return true;
 }
 
 void SeckillHttpServer::start() {
     Logger::instance().info("HTTP server starting on port " + std::to_string(port_) + "...");
-    std::ostringstream oss;
-    oss << ":" << port_;
-    server_.run(oss.str().c_str(), false);
-    Logger::instance().info("HTTP server started");
+    std::cerr << "[DEBUG] HTTP server start(): entering start()" << std::endl;
+    
+    // 在独立线程中运行 HTTP 服务器（阻塞模式）
+    server_thread_ = std::thread([this]() {
+        std::ostringstream oss;
+        oss << ":" << port_;
+        std::cerr << "[DEBUG] HTTP server thread: calling server_.run(:" << port_ << ")" << std::endl;
+        server_.run(oss.str().c_str(), true);  // true = 阻塞模式，在独立线程中运行
+        std::cerr << "[DEBUG] HTTP server thread: server_.run() returned" << std::endl;
+    });
+    
+    // 等待服务器开始监听（简单等待）
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    Logger::instance().info("HTTP server started on port " + std::to_string(port_));
+    std::cerr << "[DEBUG] HTTP server start(): returned" << std::endl;
 }
 
 void SeckillHttpServer::stop() {
     Logger::instance().info("HTTP server stopping...");
     server_.stop();
+    if (server_thread_.joinable()) {
+        server_thread_.join();
+    }
     Logger::instance().info("HTTP server stopped");
 }

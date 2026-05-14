@@ -54,7 +54,7 @@ timeout:
 
 # 安全配置（动态 Token 防脚本直刷）
 security:
-  token_required: true         # 临时关闭 Token 验证，专注测试用户限流
+  token_required: false         # 临时关闭 Token 验证，专注测试用户限流
   token_salt: "change_this_salt_in_production_abc123"  # Token 加密盐（生产环境必须修改！）
   token_expire_seconds: 30       # Token 有效期（秒）
   test_bypass_secret: ""         # 测试模式旁路密钥（可选）

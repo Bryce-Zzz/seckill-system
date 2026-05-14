@@ -108,3 +108,6 @@ private:
         return ts;
     }
 };
+
+// 全局 Snowflake 实例声明（定义见 main.cpp）
+extern Snowflake g_snow_flake;

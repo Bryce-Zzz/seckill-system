@@ -1,0 +1,58 @@
+# C++ 秒杀系统配置文件 - 实例3 (HTTP: 9020, SSE: 9021)
+server:
+  host: "127.0.0.1"
+  port: 9020
+  worker_threads: 0
+  max_connections: 100000
+
+redis:
+  host: "localhost"
+  port: 6379
+  password: ""
+  db: 0
+  pool_size: 1000
+
+mysql:
+  host: "localhost"
+  port: 3306
+  user: "seckill"
+  password: "seckill123"
+  database: "seckill"
+  pool_size: 8
+
+seckill:
+  stock_prefix: "seckill:stock:"
+  order_set_prefix: "seckill:orders:"
+  order_stream_key: "seckill:stream:orders"
+  max_per_user: 1
+  request_cooldown_seconds: 5
+  stream_maxlen: 1000000
+
+rate_limit:
+  enable: true
+  token_bucket:
+    rate: 1000000
+    capacity: 1500000
+  sliding_window:
+    window_size: 1000
+    max_requests: 2000000
+  user_window:
+    window_size: 10
+    max_requests: 5
+
+log:
+  level: "info"
+  file: "logs/seckill_9020.log"
+  format: "text"
+  max_size: 100
+  async: true
+
+timeout:
+  order_timeout_seconds: 300
+  check_interval_seconds: 30
+
+security:
+  token_required: true
+  token_salt: "change_this_salt_in_production_abc123"
+  token_expire_seconds: 30
+  test_bypass_secret: ""

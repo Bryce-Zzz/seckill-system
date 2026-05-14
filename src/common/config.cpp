@@ -1,5 +1,6 @@
 #include "common/config.h"
 #include "service/rate_limiter.h"
+#include "service/mysql_pool.h"
 #include <fstream>
 #include <iostream>
 
@@ -102,6 +103,7 @@ bool Config::load(const std::string& path) {
             seckill.order_set_prefix = config["seckill"]["order_set_prefix"].as<std::string>("seckill:orders:");
             seckill.request_cooldown_seconds = config["seckill"]["request_cooldown_seconds"].as<int>(5);
             seckill.stream_maxlen = config["seckill"]["stream_maxlen"].as<int>(100000);
+            seckill.activity_sync_interval = config["seckill"]["activity_sync_interval"].as<int>(30);
         }
 
         // Log config

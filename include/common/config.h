@@ -63,6 +63,7 @@ public:
         std::string order_set_prefix = "seckill:orders:";
         int lua_script_id = 1;
         int request_cooldown_seconds = 5;
+        int activity_sync_interval = 30;            // ActivityManager 后台同步间隔（秒）
         std::atomic<int> stream_maxlen{100000};    // atomic：可热更新
     };
 

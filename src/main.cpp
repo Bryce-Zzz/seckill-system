@@ -15,6 +15,7 @@
 #include "service/rate_limiter.h"
 #include "common/logger.h"
 #include "common/config.h"
+#include "service/activity_manager.h"
 #include "mq/IMessageQueue.h"
 
 // 全局运行标志定义
@@ -110,6 +111,13 @@ int main(int argc, char** argv) {
     MySQLPool::getInstance().init(cfg.mysql.host, cfg.mysql.user, cfg.mysql.password,
                               cfg.mysql.database, cfg.mysql.port, cfg.mysql.pool_size);
 
+    // 初始化 MySQL Service (兼容旧接口)
+    if (!MySQLService::instance().init(cfg.mysql.host, cfg.mysql.port,
+                                      cfg.mysql.user, cfg.mysql.password,
+                                      cfg.mysql.database, cfg.mysql.pool_size)) {
+        Logger::instance().error("Failed to init MySQL");
+        return 1;
+    }
 
     // 初始化本地库存缓存（需要在 MySQL 初始化后调用）
     RedisService::instance().initAllLocalStock();
@@ -142,6 +150,11 @@ int main(int argc, char** argv) {
     TimeoutChecker::instance().init(cfg.timeout.order_timeout_seconds,
                                    cfg.timeout.check_interval_seconds);
     TimeoutChecker::instance().start();
+
+    // 初始化 ActivityManager（活动状态内存缓存，纳秒级检查）
+    ActivityManager::instance().start(cfg.seckill.activity_sync_interval);
+    Logger::instance().info("ActivityManager initialized, sync_interval="
+                                   + std::to_string(cfg.seckill.activity_sync_interval) + "s");
 
     // 初始化 HTTP 服务器
     if (!SeckillHttpServer::instance().init(cfg.server.port, cfg.server.worker_threads)) {
